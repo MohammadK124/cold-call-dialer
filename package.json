@@ -1,29 +1,23 @@
 {
   "name": "cold-call-dialer",
-    "version": "1.0.0",
-      "description": "Cold calling dialer platform with call tracking",
-        "main": "server-production.js",
-          "type": "module",
-            "scripts": {
-                "start": "node server-production.js",
-                    "dev": "node --watch server-production.js",
-                        "test-db": "node server.js"
-                          },
-                            "keywords": [],
-                              "author": "",
-                                "license": "ISC",
-                                  "dependencies": {
-                                      "express": "^4.18.2",
-                                          "bcryptjs": "^2.4.3",
-                                              "jsonwebtoken": "^9.0.2",
-                                                  "multer": "^1.4.5-lts.1",
-                                                      "csv-parser": "^3.0.0",
-                                                          "xlsx": "^0.18.5",
-                                                              "cors": "^2.8.5",
-                                                                  "sqlite3": "^5.1.6",
-                                                                      "dotenv": "^16.3.1",
-                                                                          "axios": "^1.6.2",
-                                                                              "nodemailer": "^6.9.7",
-                                                                                  "twilio": "^4.10.0"
-                                                                                    }
-                                                                                    }
+  "version": "2.0.0",
+  "description": "Cold calling dialer with Twilio click-to-call and call tracking",
+  "main": "server.js",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "csv-parser": "^3.0.0",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "twilio": "^5.3.0",
+    "xlsx": "^0.18.5"
+  }
+}
