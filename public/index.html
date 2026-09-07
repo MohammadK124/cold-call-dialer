@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a1f36">
+<title>Cold Call Dialer</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f2f4f8; color: #1a1f36; min-height: 100vh; }
+  header { background: #1a1f36; color: #fff; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+  header h1 { font-size: 17px; font-weight: 600; }
+  header button { background: transparent; border: 1px solid rgba(255,255,255,.3); color: #fff; padding: 6px 10px; border-radius: 8px; font-size: 13px; }
+  main { padding: 16px; padding-bottom: 90px; max-width: 640px; margin: 0 auto; }
+  .view { display: none; } .view.active { display: block; }
+  .card { background: #fff; border-radius: 14px; padding: 18px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  h2 { font-size: 20px; margin-bottom: 12px; }
+  label { display: block; font-size: 13px; color: #555; margin: 12px 0 6px; font-weight: 500; }
+  input, textarea { width: 100%; padding: 13px; border: 1px solid #d8dce6; border-radius: 10px; font-size: 16px; background: #fff; }
+  textarea { min-height: 80px; resize: vertical; }
+  .btn { display: block; width: 100%; padding: 15px; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; text-align: center; text-decoration: none; }
+  .btn-primary { background: #4f63ff; color: #fff; }
+  .btn-call { background: #22c55e; color: #fff; font-size: 18px; padding: 18px; }
+  .btn-twilio { background: #0ea5e9; color: #fff; }
+  .btn-secondary { background: #e9ecf3; color: #1a1f36; }
+  .btn-danger { background: #fee2e2; color: #b91c1c; }
+  .btn:disabled { opacity: .5; }
+  .row { display: flex; gap: 10px; } .row .btn { flex: 1; }
+  .msg { padding: 12px; border-radius: 10px; margin-top: 10px; font-size: 14px; display: none; }
+  .msg.error { background: #fee2e2; color: #b91c1c; display: block; }
+  .msg.success { background: #dcfce7; color: #166534; display: block; }
+  .msg.info { background: #e0f2fe; color: #075985; display: block; }
+  .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .stat { background: #fff; border-radius: 12px; padding: 16px; text-align: center; }
+  .stat b { display: block; font-size: 28px; color: #4f63ff; }
+  .stat span { font-size: 12px; color: #666; }
+  .phone-big { font-size: 30px; font-weight: 700; text-align: center; letter-spacing: 1px; margin: 14px 0; color: #1a1f36; }
+  .name { font-size: 22px; font-weight: 700; }
+  .sub { color: #666; font-size: 14px; margin-top: 2px; }
+  .company { font-size: 16px; font-weight: 600; color: #1a1f36; margin-top: 4px; }
+  .details { margin-top: 16px; border-top: 1px solid #eef0f6; padding-top: 10px; }
+  .details summary { font-weight: 600; font-size: 14px; color: #4f63ff; cursor: pointer; padding: 4px 0; }
+  .kv { display: grid; grid-template-columns: minmax(110px, 38%) 1fr; gap: 8px 12px; margin-top: 10px; font-size: 14px; }
+  .kv .k, .long .k { color: #777; font-size: 12px; text-transform: uppercase; letter-spacing: .3px; }
+  .kv .v, .long .v { color: #1a1f36; word-break: break-word; }
+  .long { margin-top: 10px; background: #f7f8fb; border-radius: 10px; padding: 10px 12px; }
+  .long .v { font-size: 14px; line-height: 1.5; margin-top: 4px; white-space: pre-line; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; background: #eef0f6; color: #444; }
+  .badge.interested { background: #dcfce7; color: #166534; } .badge.not_interested { background: #fee2e2; color: #b91c1c; } .badge.callback { background: #fef3c7; color: #92400e; }
+  .status-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+  .status-btns button { padding: 12px 4px; border-radius: 10px; border: 2px solid #d8dce6; background: #fff; font-size: 13px; font-weight: 600; }
+  .status-btns .i { border-color: #22c55e; color: #166534; } .status-btns .n { border-color: #ef4444; color: #b91c1c; } .status-btns .c { border-color: #f59e0b; color: #92400e; }
+  .contact-item { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .contact-item a { color: #22c55e; font-size: 24px; text-decoration: none; padding: 6px; }
+  nav { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #e5e7eb; display: flex; padding-bottom: env(safe-area-inset-bottom); }
+  nav button { flex: 1; background: none; border: none; padding: 10px 4px 8px; font-size: 11px; color: #666; }
+  nav button span { display: block; font-size: 22px; margin-bottom: 2px; }
+  nav button.active { color: #4f63ff; font-weight: 600; }
+  .drop { border: 2px dashed #c3c8d6; border-radius: 12px; padding: 26px; text-align: center; color: #666; }
+  .drop input { display: none; }
+  .small { font-size: 13px; color: #666; line-height: 1.5; }
+  code { background: #eef0f6; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>📞 Cold Call Dialer</h1>
+  <button id="logoutBtn" onclick="logout()" style="display:none">Log out</button>
+</header>
+
+<main>
+  <!-- LOGIN -->
+  <section id="authView" class="view active">
+    <div class="card">
+      <h2>Sign in</h2>
+      <label>Username or email</label>
+      <input id="loginUsername" autocapitalize="none" autocomplete="username" placeholder="mkhoja@trilix">
+      <label>Password</label>
+      <input id="loginPassword" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()">
+      <button class="btn btn-primary" onclick="login()">Sign in</button>
+      <div id="loginError" class="msg"></div>
+    </div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section id="dashboardView" class="view">
+    <h2>Dashboard</h2>
+    <div class="stats">
+      <div class="stat"><b id="totalContacts">0</b><span>Contacts</span></div>
+      <div class="stat"><b id="totalCalls">0</b><span>Calls made</span></div>
+      <div class="stat"><b id="interestedCount">0</b><span>Interested</span></div>
+      <div class="stat"><b id="callbackCount">0</b><span>Callbacks</span></div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <button class="btn btn-call" onclick="go('dialer')">Start dialing →</button>
+      <button class="btn btn-secondary" onclick="go('upload')">Upload contacts</button>
+      <a class="btn btn-secondary" id="exportLink" href="#" onclick="exportCalls();return false;">Download call history (CSV)</a>
+    </div>
+  </section>
+
+  <!-- UPLOAD -->
+  <section id="uploadView" class="view">
+    <h2>Upload contacts</h2>
+    <div class="card">
+      <label class="drop" for="fileInput">
+        <div style="font-size:36px">📄</div>
+        <div><b>Tap to choose a CSV or Excel file</b></div>
+        <div class="small">Needs a <code>phone</code> column. <code>name</code>, <code>company</code>, <code>email</code> are optional.</div>
+        <input id="fileInput" type="file" accept=".csv,.xlsx,.xls,.txt" onchange="uploadFile(this.files[0])">
+      </label>
+      <div id="uploadStatus" class="msg"></div>
+      <button class="btn btn-danger" onclick="clearContacts()">Clear all contacts</button>
+    </div>
+  </section>
+
+  <!-- DIALER -->
+  <section id="dialerView" class="view">
+    <div id="dialerContent"></div>
+  </section>
+
+  <!-- CONTACTS -->
+  <section id="contactsView" class="view">
+    <h2>Contacts</h2>
+    <div id="contactsList"></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="settingsView" class="view">
+    <h2>Settings</h2>
+    <div class="card">
+      <b>Your phone number</b>
+      <p class="small">Used for <b>Call via Twilio</b>: Twilio rings your phone first, then connects you to the contact. The contact sees your Twilio number as caller ID and the call is recorded.</p>
+      <label>Your mobile number</label>
+      <input id="agentPhone" type="tel" placeholder="+1 555 123 4567">
+      <button class="btn btn-primary" onclick="savePhone()">Save</button>
+      <div id="settingsMsg" class="msg"></div>
+    </div>
+    <div class="card small" id="twilioInfo"></div>
+  </section>
+</main>
+
+<nav id="nav" style="display:none">
+  <button data-v="dashboard" onclick="go('dashboard')"><span>📊</span>Home</button>
+  <button data-v="upload" onclick="go('upload')"><span>📤</span>Upload</button>
+  <button data-v="dialer" onclick="go('dialer')"><span>📞</span>Dialer</button>
+  <button data-v="contacts" onclick="go('contacts')"><span>👥</span>Contacts</button>
+  <button data-v="settings" onclick="go('settings')"><span>⚙️</span>Settings</button>
+</nav>
+
+<script>
+const API = '/api';
+let token = localStorage.getItem('token');
+let contacts = [];
+let idx = parseInt(localStorage.getItem('dialIdx') || '0', 10);
+let me = {};
+let callStart = null;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function show(el, text, type) { el.textContent = text; el.className = 'msg ' + type; }
+
+async function api(path, opts = {}) {
+  opts.headers = Object.assign({}, opts.headers, token ? { Authorization: 'Bearer ' + token } : {});
+  if (opts.body && !(opts.body instanceof FormData)) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(opts.body); }
+  const r = await fetch(API + path, opts);
+  const data = await r.json().catch(() => ({ error: 'Server error' }));
+  if (r.status === 401 || r.status === 403) { logout(); throw new Error(data.error || 'Please log in again'); }
+  if (!r.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+// ---------- auth ----------
+async function login() {
+  try {
+    const d = await api('/auth/login', { method: 'POST', body: { username: $('loginUsername').value, password: $('loginPassword').value } });
+    token = d.token; localStorage.setItem('token', token);
+    enter();
+  } catch (e) { show($('loginError'), e.message, 'error'); }
+}
+function logout() { token = null; localStorage.removeItem('token'); $('nav').style.display = 'none'; $('logoutBtn').style.display = 'none'; go('auth'); }
+async function enter() {
+  $('nav').style.display = 'flex'; $('logoutBtn').style.display = 'block';
+  try { me = await api('/me'); $('agentPhone').value = me.agent_phone || ''; } catch {}
+  go('dashboard');
+}
+
+// ---------- navigation ----------
+function go(v) {
+  document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
+  $(v + 'View').classList.add('active');
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.v === v));
+  window.scrollTo(0, 0);
+  if (v === 'dashboard') loadStats();
+  if (v === 'dialer') loadContacts().then(renderDialer);
+  if (v === 'contacts') loadContacts().then(renderContacts);
+  if (v === 'settings') renderSettings();
+}
+
+// ---------- data ----------
+async function loadStats() {
+  try {
+    const d = await api('/stats');
+    $('totalContacts').textContent = d.total_contacts || 0;
+    $('totalCalls').textContent = d.total_calls || 0;
+    $('interestedCount').textContent = d.interested_count || 0;
+    $('callbackCount').textContent = d.callback_count || 0;
+  } catch {}
+}
+async function loadContacts() { try { contacts = await api('/contacts'); } catch { contacts = []; } if (idx >= contacts.length) idx = 0; return contacts; }
+
+async function uploadFile(file) {
+  if (!file) return;
+  const fd = new FormData(); fd.append('file', file);
+  show($('uploadStatus'), 'Uploading…', 'info');
+  try {
+    const d = await api('/upload', { method: 'POST', body: fd });
+    show($('uploadStatus'), '✓ ' + d.message, 'success');
+    idx = 0; localStorage.setItem('dialIdx', '0');
+    setTimeout(() => go('dialer'), 800);
+  } catch (e) { show($('uploadStatus'), e.message, 'error'); }
+  $('fileInput').value = '';
+}
+async function clearContacts() {
+  if (!confirm('Delete ALL contacts and call history?')) return;
+  await api('/contacts', { method: 'DELETE' });
+  show($('uploadStatus'), 'All contacts cleared', 'success');
+}
+function exportCalls() {
+  fetch(API + '/export/calls', { headers: { Authorization: 'Bearer ' + token } }).then(r => r.blob()).then(b => {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'call-history.csv'; a.click();
+  });
+}
+
+// ---------- dialer ----------
+function renderDialer() {
+  const box = $('dialerContent');
+  if (!contacts.length) { box.innerHTML = '<div class="card" style="text-align:center"><h2>No contacts yet</h2><p class="small">Upload a CSV or Excel file to start dialing.</p><button class="btn btn-primary" onclick="go(\'upload\')">Upload contacts</button></div>'; return; }
+  const c = contacts[idx];
+  const tel = 'tel:' + String(c.phone).replace(/[^\d+]/g, '');
+  box.innerHTML = `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+        <div style="min-width:0">
+          <div class="name">${esc(c.name)}</div>
+          ${c.title ? `<div class="sub">${esc(c.title)}</div>` : ''}
+          ${c.company ? `<div class="company">🏢 ${esc(c.company)}</div>` : ''}
+          ${c.location ? `<div class="sub">📍 ${esc(c.location)}</div>` : ''}
+        </div>
+        <span class="badge ${esc(c.last_call_status || '')}" style="white-space:nowrap">${c.last_call_status ? esc(c.last_call_status).replace('_', ' ') : 'never called'}</span>
+      </div>
+      <div class="phone-big">${esc(c.phone)}</div>
+      ${c.email ? `<div class="sub" style="text-align:center;margin-top:-8px;margin-bottom:10px">✉️ <a href="mailto:${esc(c.email)}" style="color:#4f63ff">${esc(c.email)}</a></div>` : ''}
+      <a class="btn btn-call" href="${tel}" onclick="startCall(${c.id})">📞 Call now</a>
+      <button class="btn btn-twilio" onclick="twilioCall(${c.id})">☁️ Call via Twilio (recorded)</button>
+      <div id="callMsg" class="msg"></div>
+      ${renderDetails(c)}
+      <label>Notes</label>
+      <textarea id="callNotes" placeholder="What happened on the call?"></textarea>
+      <label>Outcome</label>
+      <div class="status-btns">
+        <button class="i" onclick="logCall(${c.id}, 'interested')">✓ Interested</button>
+        <button class="n" onclick="logCall(${c.id}, 'not_interested')">✗ Not interested</button>
+        <button class="c" onclick="logCall(${c.id}, 'callback')">📅 Callback</button>
+      </div>
+      <div class="row">
+        <button class="btn btn-secondary" onclick="move(-1)">← Prev</button>
+        <button class="btn btn-secondary" onclick="move(1)">Skip →</button>
+      </div>
+      <p class="small" style="text-align:center;margin-top:10px">Contact ${idx + 1} of ${contacts.length}</p>
+    </div>`;
+}
+// Everything else from the spreadsheet, shown as tidy label/value rows (description gets its own block)
+function renderDetails(c) {
+  let extra = {}; try { extra = JSON.parse(c.custom_fields || '{}'); } catch {}
+  const shown = new Set([c.name, c.phone, c.company, c.email, c.title, c.location].map(v => String(v || '').trim()).filter(Boolean));
+  const rows = [], longs = [];
+  for (const [k, v] of Object.entries(extra)) {
+    const val = String(v).trim(); if (!val || shown.has(val)) continue;
+    const label = k.replace(/\s*-\s*cleaned$/i, '').replace(/^(contact|company)\s+/i, m => m).trim();
+    (val.length > 90 ? longs : rows).push([label, val]);
+  }
+  if (!rows.length && !longs.length) return '';
+  return `<details class="details" open><summary>Details</summary>
+    ${longs.map(([k, v]) => `<div class="long"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join('')}
+    <div class="kv">${rows.map(([k, v]) => `<div class="k">${esc(k)}</div><div class="v">${/^https?:|\.(com|net|org|io|co)(\/|$)/i.test(v) ? `<a href="${esc(/^https?:/.test(v) ? v : 'https://' + v)}" target="_blank" style="color:#4f63ff">${esc(v)}</a>` : esc(v)}</div>`).join('')}</div>
+  </details>`;
+}
+function startCall() { callStart = Date.now(); show($('callMsg'), 'Dialing from your phone… come back here to log the outcome.', 'info'); }
+async function twilioCall(id) {
+  let phone = me.agent_phone;
+  if (!phone) { phone = prompt('Enter YOUR mobile number (Twilio will ring you first, then connect the contact):'); if (!phone) return; }
+  show($('callMsg'), 'Calling your phone…', 'info');
+  try {
+    const d = await api('/twilio/call', { method: 'POST', body: { contact_id: id, agent_phone: phone } });
+    me.agent_phone = phone; callStart = Date.now();
+    show($('callMsg'), d.message, 'success');
+  } catch (e) { show($('callMsg'), e.message, 'error'); }
+}
+async function logCall(id, status) {
+  const dur = callStart ? Math.round((Date.now() - callStart) / 1000) : 0;
+  try {
+    await api('/calls', { method: 'POST', body: { contact_id: id, status, call_duration: dur, notes: $('callNotes').value } });
+    callStart = null;
+    await loadContacts(); move(1);
+  } catch (e) { show($('callMsg'), e.message, 'error'); }
+}
+function move(n) { idx = (idx + n + contacts.length) % contacts.length; localStorage.setItem('dialIdx', idx); renderDialer(); }
+
+// ---------- contacts ----------
+function renderContacts() {
+  const box = $('contactsList');
+  if (!contacts.length) { box.innerHTML = '<div class="card small">No contacts yet.</div>'; return; }
+  box.innerHTML = contacts.map((c, i) => `
+    <div class="contact-item" onclick="idx=${i};localStorage.setItem('dialIdx',${i});go('dialer')">
+      <div style="min-width:0"><b>${esc(c.name)}</b>${c.title ? ` <span class="small">· ${esc(c.title)}</span>` : ''}
+        ${c.company ? `<div class="small" style="color:#1a1f36">🏢 ${esc(c.company)}</div>` : ''}
+        <div class="small">${esc(c.phone)}${c.location ? ' · ' + esc(c.location) : ''}</div>
+        ${c.last_call_status ? `<span class="badge ${esc(c.last_call_status)}">${esc(c.last_call_status).replace('_',' ')}</span>` : ''}</div>
+      <a href="tel:${esc(String(c.phone).replace(/[^\d+]/g, ''))}" onclick="event.stopPropagation()">📞</a>
+    </div>`).join('');
+}
+
+// ---------- settings ----------
+function renderSettings() {
+  $('twilioInfo').innerHTML = me.twilio_ready
+    ? `✅ Twilio connected. Outbound caller ID: <b>${esc(me.twilio_number)}</b>`
+    : '⚠️ Twilio is not configured on the server. "Call now" (your phone\'s dialer) still works.';
+}
+async function savePhone() {
+  try { const d = await api('/me/phone', { method: 'POST', body: { agent_phone: $('agentPhone').value } }); me.agent_phone = d.agent_phone; $('agentPhone').value = d.agent_phone; show($('settingsMsg'), 'Saved ✓', 'success'); }
+  catch (e) { show($('settingsMsg'), e.message, 'error'); }
+}
+
+if (token) enter();
+</script>
+</body>
+</html>
